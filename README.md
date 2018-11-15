@@ -1,7 +1,7 @@
 
-# ESOP2019 Artifact
+# ESOP2019 Artifacts
 
 - [coq/](./coq) for Coq formalization of the calculus
 - [impl/](./impl) for Haskell implementation of the calculus
-- [examples/](./impl) for Haskell and SEDEL code examples in the overview section
+- [examples/](./examples) for Haskell and SEDEL code examples in Section 2
 - [paper.pdf](./paper.pdf) for extended version with appendices

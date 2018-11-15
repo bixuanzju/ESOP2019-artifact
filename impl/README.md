@@ -49,7 +49,7 @@ Like Haskell, a line comment starts with `--` and a comment block is wrapped by
 * Merge: `true ,, 3`
 * Intersection type: `Bool & (Int -> Int)`
 * If: `if x == 0 then true else false`
-* λ term: `(\(x : Int) -> x+1)`
+* λ term: `\(x : Int) -> x+1`
 * Λ term: `/\ (A * Int) . \(x : A) -> x`
 * Disjoint quantification: `forall (A*Int) . A -> A`
 * Term declaration: `id A (x : A) = x`
