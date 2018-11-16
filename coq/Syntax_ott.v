@@ -85,7 +85,7 @@ Inductive exp : Set :=
 
 
 (* ********************************************************************** *)
-(** * Fi+ expressions contexts *)
+(** * Fi+ expression contexts *)
 
 Inductive CC : Set :=
  | C_Empty : CC
@@ -118,7 +118,7 @@ Inductive dirflag : Set :=  (*r checking direction *)
 
 
 (* ********************************************************************** *)
-(** * Fco expressions contexts *)
+(** * Fco expression contexts *)
 
 Inductive cc : Set :=  (*r target context *)
  | cc_empty : cc
