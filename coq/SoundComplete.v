@@ -7,6 +7,10 @@ Require Import Omega.
 
 Import ListNotations.
 
+
+Definition sizefs (Q : seqs) :=
+  fold_right (fun l acc => l + acc) 0 (map size_elem Q).
+
 Lemma qvars_notin_union : forall Q s1 s2,
     qvars_notin s1 Q ->
     qvars_notin s2 Q ->

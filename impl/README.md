@@ -42,7 +42,7 @@ A program consists of list of declarations (separated by `;`), ended with a `mai
 Like Haskell, a line comment starts with `--` and a comment block is wrapped by
 `{-` and `-}`. 
 
-* Primitive type: `Int`, `Bool`, `Double, `String`
+* Primitive type: `Int`, `Bool`, `Double`, `String`
 * Top type/value: `() : Top`
 * Bottom type: `Bot`
 * Type annotation: `2 : Int`

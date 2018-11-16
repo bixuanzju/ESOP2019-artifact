@@ -1,6 +1,6 @@
 
 Require Import Metalib.Metatheory.
-Require Export Syntax_ott.
+Require Import SystemF_inf.
 
 (* ********************************************************************** *)
 (** * Monotype predicate *)
@@ -19,9 +19,43 @@ Inductive mono : sty -> Prop :=
     (mono A) ->
     (mono B) ->
     (mono (sty_and A B))
-| mono_rcd : forall (l:i) (A:sty),
+| mono_rcd : forall (l:nat) (A:sty),
     (mono A) ->
     (mono (sty_rcd l A)).
+
+Inductive poly : sty -> Prop :=
+| poly_p : forall A B,
+    lc_sty (sty_all A B) ->
+    poly (sty_all A B)
+| poly_and1 : forall A B,
+    poly A ->
+    mono B ->
+    poly (sty_and A B)
+| poly_and2 : forall A B,
+    poly B ->
+    mono A ->
+    poly (sty_and A B)
+| poly_and3 : forall A B,
+    poly A ->
+    poly B ->
+    poly (sty_and A B)
+| poly_arr1 : forall (A B:sty),
+    poly A ->
+    mono B ->
+    poly (sty_arrow A B)
+| poly_arr2 : forall (A B:sty),
+    poly B ->
+    mono A ->
+    poly (sty_arrow A B)
+| poly_arr3 : forall (A B:sty),
+    poly A ->
+    poly B ->
+    poly (sty_arrow A B)
+| poly_rcd : forall (l:nat) (A:sty),
+    poly A ->
+    poly (sty_rcd l A).
+
+
 
 (* ********************************************************************** *)
 (** * Type translation *)
@@ -136,9 +170,9 @@ Inductive typ : tctx -> ctx -> exp -> ty -> Prop :=    (* defn typ *)
  | typ_unit : forall (dd:tctx) (gg:ctx),
      wfe dd gg ->
      typ dd gg exp_unit ty_unit
- | typ_nat : forall (dd:tctx) (gg:ctx) (i5:i),
+ | typ_nat : forall (dd:tctx) (gg:ctx) (i:nat),
      wfe dd gg ->
-     typ dd gg (exp_lit i5) ty_nat
+     typ dd gg (exp_lit i) ty_nat
  | typ_var : forall (dd:tctx) (gg:ctx) (x:expvar) (T:ty),
      wfe dd gg ->
       binds  x   T   gg  ->
@@ -176,8 +210,8 @@ Inductive typ : tctx -> ctx -> exp -> ty -> Prop :=    (* defn typ *)
 Inductive value : exp -> Prop :=    (* defn value *)
  | value_unit :
      value exp_unit
- | value_lit : forall (i5:i),
-     value (exp_lit i5)
+ | value_lit : forall (i:nat),
+     value (exp_lit i)
  | value_abs : forall (e:exp),
      lc_exp (exp_abs e) ->
      value (exp_abs e)
@@ -313,7 +347,7 @@ Inductive swft : stctx -> sty -> Prop :=    (* defn swft *)
      swft DD A ->
      swft DD B ->
      swft DD (sty_and A B)
- | swft_rcd : forall (DD:stctx) (l:i) (A:sty),
+ | swft_rcd : forall (DD:stctx) (l:nat) (A:sty),
      swft DD A ->
      swft DD (sty_rcd l A).
 
@@ -363,7 +397,7 @@ Inductive sub : stctx -> sty -> sty -> co -> Prop :=    (* defn sub *)
      sub DD sty_bot A co_bot
  | S_topArr : forall (DD:stctx),
      sub DD sty_top (sty_arrow sty_top sty_top) co_topArr
- | S_topRcd : forall (DD:stctx) (l:i),
+ | S_topRcd : forall (DD:stctx) (l:nat),
      sub DD sty_top (sty_rcd l sty_top) co_id
  | S_topAll : forall (DD:stctx),
      sub DD sty_top (sty_all sty_top sty_top) co_topAll
@@ -387,7 +421,7 @@ Inductive sub : stctx -> sty -> sty -> co -> Prop :=    (* defn sub *)
       ( forall X , X \notin  L  -> sub  (( X ~ A2 )++ DD )   ( open_sty_wrt_sty B1 (sty_var_f X) )   ( open_sty_wrt_sty B2 (sty_var_f X) )  c )  ->
      sub DD A2 A1 c' ->
      sub DD (sty_all A1 B1) (sty_all A2 B2) (co_forall c)
- | S_rcd : forall (DD:stctx) (l:i) (A B:sty) (c:co),
+ | S_rcd : forall (DD:stctx) (l:nat) (A B:sty) (c:co),
      sub DD A B c ->
      sub DD (sty_rcd l A) (sty_rcd l B) c
  | S_distArr : forall (DD:stctx) (A1 A2 A3:sty),
@@ -395,7 +429,7 @@ Inductive sub : stctx -> sty -> sty -> co -> Prop :=    (* defn sub *)
      swft DD A2 ->
      swft DD A3 ->
      sub DD (sty_and  ( (sty_arrow A1 A2) )   ( (sty_arrow A1 A3) ) ) (sty_arrow A1 (sty_and A2 A3)) co_distArr
- | S_distRcd : forall (DD:stctx) (l:i) (A B:sty),
+ | S_distRcd : forall (DD:stctx) (l:nat) (A B:sty),
      swft DD A ->
      swft DD B ->
      sub DD (sty_and (sty_rcd l A) (sty_rcd l B)) (sty_rcd l (sty_and A B)) co_id
@@ -424,7 +458,7 @@ Inductive csub : sty -> sty -> co -> Prop :=
      csub sty_bot A co_bot
  | CS_topArr :
      csub sty_top (sty_arrow sty_top sty_top) co_topArr
- | CS_topRcd : forall (l:i),
+ | CS_topRcd : forall (l:nat),
      csub sty_top (sty_rcd l sty_top) co_id
  | CS_topAll :
      csub sty_top (sty_all sty_top sty_top) co_topAll
@@ -448,7 +482,7 @@ Inductive csub : sty -> sty -> co -> Prop :=
       ( forall X , X \notin  L  -> csub  ( open_sty_wrt_sty B1 (sty_var_f X) )   ( open_sty_wrt_sty B2 (sty_var_f X) )  c )  ->
      csub A2 A1 c' ->
      csub (sty_all A1 B1) (sty_all A2 B2) (co_forall c)
- | CS_rcd : forall (l:i) (A B:sty) (c:co),
+ | CS_rcd : forall (l:nat) (A B:sty) (c:co),
      csub A B c ->
      csub (sty_rcd l A) (sty_rcd l B) c
  | CS_distArr : forall (A1 A2 A3:sty),
@@ -456,7 +490,7 @@ Inductive csub : sty -> sty -> co -> Prop :=
      lc_sty A2 ->
      lc_sty A3 ->
      csub (sty_and  ( (sty_arrow A1 A2) )   ( (sty_arrow A1 A3) ) ) (sty_arrow A1 (sty_and A2 A3)) co_distArr
- | CS_distRcd : forall (l:i) (A B:sty),
+ | CS_distRcd : forall (l:nat) (A B:sty),
      lc_sty A ->
      lc_sty B ->
      csub (sty_and (sty_rcd l A) (sty_rcd l B)) (sty_rcd l (sty_and A B)) co_id
@@ -514,10 +548,10 @@ Inductive disjoint : stctx -> sty -> sty -> Prop :=
      disjoint DD A B1 ->
      disjoint DD A B2 ->
      disjoint DD A (sty_and B1 B2)
- | D_rcdEq : forall (DD:stctx) (l:i) (A B:sty),
+ | D_rcdEq : forall (DD:stctx) (l:nat) (A B:sty),
      disjoint DD A B ->
      disjoint DD (sty_rcd l A) (sty_rcd l B)
- | D_rcdNeq : forall (DD:stctx) (l1:i) (A:sty) (l2:i) (B:sty),
+ | D_rcdNeq : forall (DD:stctx) (l1:nat) (A:sty) (l2:nat) (B:sty),
       l1  <>  l2  ->
      swft DD A ->
      swft DD B ->
@@ -530,27 +564,27 @@ Inductive disjoint : stctx -> sty -> sty -> Prop :=
      swft DD A1 ->
      swft DD A2 ->
      disjoint DD (sty_arrow A1 A2) sty_nat
- | D_axNatRcd : forall (DD:stctx) (l:i) (A:sty),
+ | D_axNatRcd : forall (DD:stctx) (l:nat) (A:sty),
      swft DD A ->
      disjoint DD sty_nat (sty_rcd l A)
- | D_axRcdNat : forall (DD:stctx) (l:i) (A:sty),
+ | D_axRcdNat : forall (DD:stctx) (l:nat) (A:sty),
      swft DD A ->
      disjoint DD (sty_rcd l A) sty_nat
- | D_axArrRcd : forall (DD:stctx) (A1 A2:sty) (l:i) (A:sty),
+ | D_axArrRcd : forall (DD:stctx) (A1 A2:sty) (l:nat) (A:sty),
      swft DD A1 ->
      swft DD A2 ->
      swft DD A ->
      disjoint DD (sty_arrow A1 A2) (sty_rcd l A)
- | D_axRcdArr : forall (DD:stctx) (l:i) (A A1 A2:sty),
+ | D_axRcdArr : forall (DD:stctx) (l:nat) (A A1 A2:sty),
      swft DD A1 ->
      swft DD A2 ->
      swft DD A ->
      disjoint DD (sty_rcd l A) (sty_arrow A1 A2)
- | D_axRcdAll : forall (DD:stctx) (l:i) (A A1 B1:sty),
+ | D_axRcdAll : forall (DD:stctx) (l:nat) (A A1 B1:sty),
      swft DD (sty_all A1 B1) ->
      swft DD A ->
      disjoint DD (sty_rcd l A) (sty_all A1 B1)
- | D_axAllRcd : forall (DD:stctx) (A1 B1:sty) (l:i) (A:sty),
+ | D_axAllRcd : forall (DD:stctx) (A1 B1:sty) (l:nat) (A:sty),
      swft DD (sty_all A1 B1) ->
      swft DD A ->
      disjoint DD (sty_all A1 B1) (sty_rcd l A)
@@ -593,10 +627,10 @@ Inductive has_type : stctx -> sctx -> sexp -> dirflag -> sty -> exp -> Prop :=  
      swfe DD GG ->
      swfte DD ->
      has_type DD GG sexp_top Inf sty_top exp_unit
- | T_nat : forall (DD:stctx) (GG:sctx) (i5:i),
+ | T_nat : forall (DD:stctx) (GG:sctx) (i:nat),
      swfe DD GG ->
      swfte DD ->
-     has_type DD GG (sexp_lit i5) Inf sty_nat (exp_lit i5)
+     has_type DD GG (sexp_lit i) Inf sty_nat (exp_lit i)
  | T_var : forall (DD:stctx) (GG:sctx) (x:expvar) (A:sty),
      swfte DD ->
      swfe DD GG ->
@@ -624,10 +658,10 @@ Inductive has_type : stctx -> sctx -> sexp -> dirflag -> sty -> exp -> Prop :=  
       mono  t  ->
      disjoint DD t B ->
      has_type DD GG (sexp_tapp ee t) Inf  (open_sty_wrt_sty  C   t )  (exp_tapp e  (sty2ty  t ) )
- | T_rcd : forall (DD:stctx) (GG:sctx) (l:i) (ee:sexp) (A:sty) (e:exp),
+ | T_rcd : forall (DD:stctx) (GG:sctx) (l:nat) (ee:sexp) (A:sty) (e:exp),
      has_type DD GG ee Inf A e ->
      has_type DD GG (sexp_rcd l ee) Inf (sty_rcd l A) e
- | T_proj : forall (DD:stctx) (GG:sctx) (ee:sexp) (l:i) (A:sty) (e:exp),
+ | T_proj : forall (DD:stctx) (GG:sctx) (ee:sexp) (l:nat) (A:sty) (e:exp),
      has_type DD GG ee Inf (sty_rcd l A) e ->
      has_type DD GG (sexp_proj ee l) Inf A e
  | T_abs : forall (L:vars) (DD:stctx) (GG:sctx) (ee:sexp) (A B:sty) (e:exp),
@@ -639,6 +673,137 @@ Inductive has_type : stctx -> sctx -> sexp -> dirflag -> sty -> exp -> Prop :=  
      swft DD A ->
      sub DD B A c ->
      has_type DD GG ee Chk A (exp_capp c e).
+
+
+(* ********************************************************************** *)
+(** * Typing of Fi+ expression contexts *)
+
+Inductive CTyp : CC -> stctx -> sctx -> dirflag -> sty -> stctx -> sctx -> dirflag -> sty -> cc -> Prop :=    (* defn CTyp *)
+ | CTyp_empty1 : forall (DD:stctx) (GG:sctx) (A:sty),
+     lc_sty A ->
+     CTyp C_Empty DD GG Inf A DD GG Inf A cc_empty
+ | CTyp_empty2 : forall (DD:stctx) (GG:sctx) (A:sty),
+     lc_sty A ->
+     CTyp C_Empty DD GG Chk A DD GG Chk A cc_empty
+ | CTyp_appL1 : forall (CC5:CC) (ee2:sexp) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (cc5:cc) (e:exp) (A1:sty),
+     CTyp CC5 DD GG Inf A DD' GG' Inf (sty_arrow A1 A2) cc5 ->
+     has_type DD' GG' ee2 Chk A1 e ->
+     CTyp (C_AppL CC5 ee2) DD GG Inf A DD' GG' Inf A2 (cc_appL cc5 e)
+ | CTyp_appL2 : forall (CC5:CC) (ee2:sexp) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (cc5:cc) (e:exp) (A1:sty),
+     CTyp CC5 DD GG Chk A DD' GG' Inf (sty_arrow A1 A2) cc5 ->
+     has_type DD' GG' ee2 Chk A1 e ->
+     CTyp (C_AppL CC5 ee2) DD GG Chk A DD' GG' Inf A2 (cc_appL cc5 e)
+ | CTyp_appR1 : forall (ee1:sexp) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (e:exp) (cc5:cc) (A1:sty),
+     CTyp CC5 DD GG Inf A DD' GG' Chk A1 cc5 ->
+     has_type DD' GG' ee1 Inf (sty_arrow A1 A2) e ->
+     CTyp (C_AppRd ee1 CC5) DD GG Inf A DD' GG' Inf A2 (cc_appR e cc5)
+ | CTyp_appR2 : forall (ee1:sexp) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (e:exp) (cc5:cc) (A1:sty),
+     CTyp CC5 DD GG Chk A DD' GG' Chk A1 cc5 ->
+     has_type DD' GG' ee1 Inf (sty_arrow A1 A2) e ->
+     CTyp (C_AppRd ee1 CC5) DD GG Chk A DD' GG' Inf A2 (cc_appR e cc5)
+ | CTyp_mergeL1 : forall (CC5:CC) (ee2:sexp) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (cc5:cc) (e:exp),
+     CTyp CC5 DD GG Inf A DD' GG' Inf A1 cc5 ->
+     has_type DD' GG' ee2 Inf A2 e ->
+     disjoint DD' A1 A2 ->
+     CTyp (C_MergeL CC5 ee2) DD GG Inf A DD' GG' Inf (sty_and A1 A2) (cc_pairL cc5 e)
+ | CTyp_mergeL2 : forall (CC5:CC) (ee2:sexp) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (cc5:cc) (e:exp),
+     CTyp CC5 DD GG Chk A DD' GG' Inf A1 cc5 ->
+     has_type DD' GG' ee2 Inf A2 e ->
+     disjoint DD' A1 A2 ->
+     CTyp (C_MergeL CC5 ee2) DD GG Chk A DD' GG' Inf (sty_and A1 A2) (cc_pairL cc5 e)
+ | CTyp_mergeR1 : forall (ee1:sexp) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (e:exp) (cc5:cc),
+     CTyp CC5 DD GG Inf A DD' GG' Inf A2 cc5 ->
+     has_type DD' GG' ee1 Inf A1 e ->
+     disjoint DD' A1 A2 ->
+     CTyp (C_MergeR ee1 CC5) DD GG Inf A DD' GG' Inf (sty_and A1 A2) (cc_pairR e cc5)
+ | CTyp_mergeR2 : forall (ee1:sexp) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (e:exp) (cc5:cc),
+     CTyp CC5 DD GG Chk A DD' GG' Inf A2 cc5 ->
+     has_type DD' GG' ee1 Inf A1 e ->
+     disjoint DD' A1 A2 ->
+     CTyp (C_MergeR ee1 CC5) DD GG Chk A DD' GG' Inf (sty_and A1 A2) (cc_pairR e cc5)
+ | CTyp_rcd1 : forall (l:nat) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B:sty) (cc5:cc),
+     CTyp CC5 DD GG Inf A DD' GG' Inf B cc5 ->
+     CTyp (C_Rcd l CC5) DD GG Inf A DD' GG' Inf (sty_rcd l B) cc5
+ | CTyp_rcd2 : forall (l:nat) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B:sty) (cc5:cc),
+     CTyp CC5 DD GG Chk A DD' GG' Inf B cc5 ->
+     CTyp (C_Rcd l CC5) DD GG Chk A DD' GG' Inf (sty_rcd l B) cc5
+ | CTyp_proj1 : forall (CC5:CC) (l:nat) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B:sty) (cc5:cc),
+     CTyp CC5 DD GG Inf A DD' GG' Inf (sty_rcd l B) cc5 ->
+     CTyp (C_Proj CC5 l) DD GG Inf A DD' GG' Inf B cc5
+ | CTyp_proj2 : forall (CC5:CC) (l:nat) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B:sty) (cc5:cc),
+     CTyp CC5 DD GG Chk A DD' GG' Inf (sty_rcd l B) cc5 ->
+     CTyp (C_Proj CC5 l) DD GG Chk A DD' GG' Inf B cc5
+ | CTyp_anno1 : forall (CC5:CC) (A:sty) (DD:stctx) (GG:sctx) (B:sty) (DD':stctx) (GG':sctx) (cc5:cc),
+     CTyp CC5 DD GG Inf B DD' GG' Chk A cc5 ->
+     CTyp (C_Anno CC5 A) DD GG Inf B DD' GG' Inf A cc5
+ | CTyp_anno2 : forall (CC5:CC) (A:sty) (DD:stctx) (GG:sctx) (B:sty) (DD':stctx) (GG':sctx) (cc5:cc),
+     CTyp CC5 DD GG Chk B DD' GG' Chk A cc5 ->
+     CTyp (C_Anno CC5 A) DD GG Chk B DD' GG' Inf A cc5
+ | CTyp_abs1 : forall (x:expvar) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (cc5:cc),
+     CTyp CC5 DD GG Inf A DD'  (( x ~ A1 )++ GG' )  Chk A2 cc5 ->
+     swft DD' A1 ->
+     swfte DD' ->
+     x `notin` dom GG' ->
+     x `notin` dom DD' ->
+     CTyp (C_Lam x CC5) DD GG Inf A DD' GG' Chk (sty_arrow A1 A2) (cc_lam x cc5)
+ | CTyp_abs2 : forall (x:expvar) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A1 A2:sty) (cc5:cc),
+     CTyp CC5 DD GG Chk A DD'  (( x ~ A1 )++ GG' )  Chk A2 cc5 ->
+     swft DD' A1 ->
+     swfte DD' ->
+     x `notin` dom GG' ->
+     x `notin` dom DD' ->
+     CTyp (C_Lam x CC5) DD GG Chk A DD' GG' Chk (sty_arrow A1 A2) (cc_lam x cc5)
+ | CTyp_tabs1 : forall X (L:vars) (B:sty) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B':sty) (cc5:cc),
+     CTyp CC5 DD GG Inf A  (( X ~ B )++ DD' )  GG' Inf  ( open_sty_wrt_sty B' (sty_var_f X) )  cc5   ->
+     swft DD' B ->
+     swfe DD' GG' ->
+     swfte DD' ->
+     X `notin` dom GG' ->
+     X `notin` dom DD' ->
+     X `notin` fv_sty_in_sty B' ->
+     X `notin` fv_sty_in_sty B' ->
+     CTyp (C_tabs X B CC5) DD GG Inf A DD' GG' Inf (sty_all B B') (cc_tabs X cc5)
+ | CTyp_tabs2 : forall X (L:vars) (B:sty) (CC5:CC) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (B':sty) (cc5:cc),
+     CTyp CC5 DD GG Chk A  (( X ~ B )++ DD' )  GG' Inf  ( open_sty_wrt_sty B' (sty_var_f X) )  cc5   ->
+     swft DD' B ->
+     swfe DD' GG' ->
+     swfte DD' ->
+     X `notin` dom GG' ->
+     X `notin` dom DD' ->
+     X `notin` fv_sty_in_sty B' ->
+     X `notin` fv_sty_in_sty B' ->
+     CTyp (C_tabs X B CC5) DD GG Chk A DD' GG' Inf (sty_all B B') (cc_tabs X cc5)
+ | CTyp_tapp1 : forall (CC5:CC) (B:sty) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (cc5:cc) (A1:sty),
+     CTyp CC5 DD GG Inf A DD' GG' Inf (sty_all A1 A2) cc5 ->
+     swfte DD' ->
+     swft DD' B ->
+     disjoint DD' B A1 ->
+     mono  B  ->
+     CTyp (C_tapp CC5 B) DD GG Inf A DD' GG' Inf  (open_sty_wrt_sty  A2   B )  (cc_tapp cc5  (sty2ty  B ) )
+ | CTyp_tapp2 : forall (CC5:CC) (B:sty) (DD:stctx) (GG:sctx) (A:sty) (DD':stctx) (GG':sctx) (A2:sty) (cc5:cc) (A1:sty),
+     CTyp CC5 DD GG Chk A DD' GG' Inf (sty_all A1 A2) cc5 ->
+     swfte DD' ->
+     swft DD' B ->
+     disjoint DD' B A1 ->
+     mono  B  ->
+     CTyp (C_tapp CC5 B) DD GG Chk A DD' GG' Inf  (open_sty_wrt_sty  A2   B )  (cc_tapp cc5  (sty2ty  B ) ).
+
+(** ** Context replacement *)
+
+Fixpoint appctx (ctx : cc) (t : exp) : exp :=
+  match ctx with
+  | cc_empty => t
+  | cc_lam x c => exp_abs (close_exp_wrt_exp x (appctx c t))
+  | cc_tabs X c => exp_tabs (close_exp_wrt_ty X (appctx c t))
+  | cc_tapp c T => exp_tapp (appctx c t) T
+  | cc_appL c t2 => exp_app (appctx c t) t2
+  | cc_appR t1 c => exp_app t1 (appctx c t)
+  | cc_pairL c t2 => exp_pair (appctx c t) t2
+  | cc_pairR t1 c => exp_pair t1 (appctx c t)
+  | cc_co co c => exp_capp co (appctx c t)
+  end.
+
+
 
 
 Section Star.
@@ -703,4 +868,4 @@ Arguments irred : default implicits.
 
 Notation "t ->* t'" := (star step t t') (at level 68).
 
-Hint Constructors wft wfe ctyp typ value step swft swfe swfte sub csub disjoint has_type TopLike star.
+Hint Constructors wft wfe ctyp typ value step swft swfe swfte sub csub disjoint has_type TopLike star mono poly CTyp.

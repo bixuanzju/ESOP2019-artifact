@@ -10,17 +10,6 @@ Coercion ty_var_f : typvar >-> ty.
 Coercion exp_var_b : nat >-> exp.
 Coercion exp_var_f : expvar >-> exp.
 
-Definition fv_qs (B : qs) : vars :=
-  match B with
-  | qs_arr A => fv_sty_in_sty A
-  | qs_rcd l => {}
-  | qs_all X A => singleton X `union` fv_sty_in_sty A
-  end.
-
-
-Definition seqs_vars (fs : seqs) : vars :=
-  fold_right (fun qs acc => fv_qs qs \u acc) empty fs.
-
 Ltac gather_atoms ::=
   let A := gather_atoms_with (fun x : vars => x) in
   let B := gather_atoms_with (fun x : var => {{ x }}) in
@@ -34,8 +23,7 @@ Ltac gather_atoms ::=
   let D4 := gather_atoms_with (fun x => fv_sty_in_sty x) in
   let D5 := gather_atoms_with (fun x => fv_sty_in_sexp x) in
   let D6 := gather_atoms_with (fun x => fv_sexp_in_sexp x) in
-  let D7 := gather_atoms_with (fun x => seqs_vars x) in
-  constr:(A \u B \u C1 \u C2 \u C3 \u C4 \u D1 \u D2 \u D3 \u D4 \u D5 \u D6 \u D7).
+  constr:(A \u B \u C1 \u C2 \u C3 \u C4 \u D1 \u D2 \u D3 \u D4 \u D5 \u D6).
 
 
 (* ********************************************************************** *)
@@ -176,41 +164,6 @@ Proof with eauto.
   inverts Bad.
   tryfalse.
 Qed.
-
-
-Inductive poly : sty -> Prop :=
-| poly_p : forall A B,
-    lc_sty (sty_all A B) ->
-    poly (sty_all A B)
-| poly_and1 : forall A B,
-    poly A ->
-    mono B ->
-    poly (sty_and A B)
-| poly_and2 : forall A B,
-    poly B ->
-    mono A ->
-    poly (sty_and A B)
-| poly_and3 : forall A B,
-    poly A ->
-    poly B ->
-    poly (sty_and A B)
-| poly_arr1 : forall (A B:sty),
-    poly A ->
-    mono B ->
-    poly (sty_arrow A B)
-| poly_arr2 : forall (A B:sty),
-    poly B ->
-    mono A ->
-    poly (sty_arrow A B)
-| poly_arr3 : forall (A B:sty),
-    poly A ->
-    poly B ->
-    poly (sty_arrow A B)
-| poly_rcd : forall (l:i) (A:sty),
-    poly A ->
-    poly (sty_rcd l A).
-
-Hint Constructors poly.
 
 
 Lemma mono_lc : forall t,

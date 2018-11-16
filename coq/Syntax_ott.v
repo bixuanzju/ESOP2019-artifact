@@ -1,8 +1,6 @@
 Require Import Metalib.Metatheory.
 Definition typvar := var.
 Definition expvar := var.
-Definition i := nat.
-
 
 
 (* ********************************************************************** *)
@@ -17,7 +15,7 @@ Inductive sty : Set :=
  | sty_arrow (A:sty) (B:sty)
  | sty_and (A:sty) (B:sty)
  | sty_all (A:sty) (B:sty)
- | sty_rcd (l:i) (A:sty).
+ | sty_rcd (l:nat) (A:sty).
 
 
 (* ********************************************************************** *)
@@ -59,15 +57,15 @@ Inductive sexp : Set :=
  | sexp_var_b (_:nat)
  | sexp_var_f (x:expvar)
  | sexp_top : sexp
- | sexp_lit (i5:i)
+ | sexp_lit (i5:nat)
  | sexp_abs (ee:sexp)
  | sexp_app (ee1:sexp) (ee2:sexp)
  | sexp_merge (ee1:sexp) (ee2:sexp)
  | sexp_tabs (A:sty) (ee:sexp)
  | sexp_tapp (ee:sexp) (A:sty)
  | sexp_anno (ee:sexp) (A:sty)
- | sexp_rcd (l:i) (ee:sexp)
- | sexp_proj (ee:sexp) (l:i).
+ | sexp_rcd (l:nat) (ee:sexp)
+ | sexp_proj (ee:sexp) (l:nat).
 
 
 (* ********************************************************************** *)
@@ -77,7 +75,7 @@ Inductive exp : Set :=
  | exp_var_b (_:nat)
  | exp_var_f (x:expvar)
  | exp_unit : exp
- | exp_lit (i5:i)
+ | exp_lit (i:nat)
  | exp_abs (e:exp)
  | exp_app (e1:exp) (e2:exp)
  | exp_pair (e1:exp) (e2:exp)
@@ -99,8 +97,8 @@ Inductive CC : Set :=
  | C_MergeL (CC5:CC) (ee:sexp)
  | C_MergeR (ee:sexp) (CC5:CC)
  | C_Anno (CC5:CC) (A:sty)
- | C_Rcd (l:i) (CC5:CC)
- | C_Proj (CC5:CC) (l:i).
+ | C_Rcd (l:nat) (CC5:CC)
+ | C_Proj (CC5:CC) (l:nat).
 
 
 (* ********************************************************************** *)
@@ -145,20 +143,9 @@ Definition tctx : Set := list (atom * unit).
 
 Definition ctx : Set := list ( atom * ty ).
 
+(* Definition p : Set := list atom. *)
 
-(* ********************************************************************** *)
-(** * Algorithmic queue *)
-
-Inductive qs : Set := 
- | qs_arr (A:sty)
- | qs_all (X:typvar) (A:sty)
- | qs_rcd (l:i).
-
-Definition p : Set := list atom.
-
-Definition g : Set := list atom.
-
-Definition seqs : Set := list qs.
+(* Definition g : Set := list atom. *)
 
 
 (* ********************************************************************** *)
@@ -268,84 +255,13 @@ Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
   | (exp_tapp e T) => exp_tapp (open_exp_wrt_exp_rec k e_5 e) T
 end.
 
-Fixpoint open_cc_wrt_ty_rec (k:nat) (T5:ty) (cc_6:cc) {struct cc_6}: cc :=
-  match cc_6 with
-  | cc_empty => cc_empty 
-  | (cc_lam x cc5) => cc_lam x (open_cc_wrt_ty_rec k T5 cc5)
-  | (cc_tabs X cc5) => cc_tabs X (open_cc_wrt_ty_rec k T5 cc5)
-  | (cc_tapp cc5 T) => cc_tapp (open_cc_wrt_ty_rec k T5 cc5) (open_ty_wrt_ty_rec k T5 T)
-  | (cc_appL cc5 e) => cc_appL (open_cc_wrt_ty_rec k T5 cc5) (open_exp_wrt_ty_rec k T5 e)
-  | (cc_appR e cc5) => cc_appR (open_exp_wrt_ty_rec k T5 e) (open_cc_wrt_ty_rec k T5 cc5)
-  | (cc_pairL cc5 e) => cc_pairL (open_cc_wrt_ty_rec k T5 cc5) (open_exp_wrt_ty_rec k T5 e)
-  | (cc_pairR e cc5) => cc_pairR (open_exp_wrt_ty_rec k T5 e) (open_cc_wrt_ty_rec k T5 cc5)
-  | (cc_co c cc5) => cc_co c (open_cc_wrt_ty_rec k T5 cc5)
-end.
 
-Fixpoint open_CC_wrt_sty_rec (k:nat) (A5:sty) (CC_6:CC) {struct CC_6}: CC :=
-  match CC_6 with
-  | C_Empty => C_Empty 
-  | (C_Lam x CC5) => C_Lam x (open_CC_wrt_sty_rec k A5 CC5)
-  | (C_tabs X A CC5) => C_tabs X (open_sty_wrt_sty_rec k A5 A) (open_CC_wrt_sty_rec k A5 CC5)
-  | (C_tapp CC5 A) => C_tapp (open_CC_wrt_sty_rec k A5 CC5) (open_sty_wrt_sty_rec k A5 A)
-  | (C_AppL CC5 ee) => C_AppL (open_CC_wrt_sty_rec k A5 CC5) (open_sexp_wrt_sty_rec k A5 ee)
-  | (C_AppRd ee CC5) => C_AppRd (open_sexp_wrt_sty_rec k A5 ee) (open_CC_wrt_sty_rec k A5 CC5)
-  | (C_MergeL CC5 ee) => C_MergeL (open_CC_wrt_sty_rec k A5 CC5) (open_sexp_wrt_sty_rec k A5 ee)
-  | (C_MergeR ee CC5) => C_MergeR (open_sexp_wrt_sty_rec k A5 ee) (open_CC_wrt_sty_rec k A5 CC5)
-  | (C_Anno CC5 A) => C_Anno (open_CC_wrt_sty_rec k A5 CC5) (open_sty_wrt_sty_rec k A5 A)
-  | (C_Rcd l CC5) => C_Rcd l (open_CC_wrt_sty_rec k A5 CC5)
-  | (C_Proj CC5 l) => C_Proj (open_CC_wrt_sty_rec k A5 CC5) l
-end.
-
-Fixpoint open_CC_wrt_sexp_rec (k:nat) (ee5:sexp) (CC_6:CC) {struct CC_6}: CC :=
-  match CC_6 with
-  | C_Empty => C_Empty 
-  | (C_Lam x CC5) => C_Lam x (open_CC_wrt_sexp_rec k ee5 CC5)
-  | (C_tabs X A CC5) => C_tabs X A (open_CC_wrt_sexp_rec k ee5 CC5)
-  | (C_tapp CC5 A) => C_tapp (open_CC_wrt_sexp_rec k ee5 CC5) A
-  | (C_AppL CC5 ee) => C_AppL (open_CC_wrt_sexp_rec k ee5 CC5) (open_sexp_wrt_sexp_rec k ee5 ee)
-  | (C_AppRd ee CC5) => C_AppRd (open_sexp_wrt_sexp_rec k ee5 ee) (open_CC_wrt_sexp_rec k ee5 CC5)
-  | (C_MergeL CC5 ee) => C_MergeL (open_CC_wrt_sexp_rec k ee5 CC5) (open_sexp_wrt_sexp_rec k ee5 ee)
-  | (C_MergeR ee CC5) => C_MergeR (open_sexp_wrt_sexp_rec k ee5 ee) (open_CC_wrt_sexp_rec k ee5 CC5)
-  | (C_Anno CC5 A) => C_Anno (open_CC_wrt_sexp_rec k ee5 CC5) A
-  | (C_Rcd l CC5) => C_Rcd l (open_CC_wrt_sexp_rec k ee5 CC5)
-  | (C_Proj CC5 l) => C_Proj (open_CC_wrt_sexp_rec k ee5 CC5) l
-end.
-
-Fixpoint open_cc_wrt_exp_rec (k:nat) (e5:exp) (cc_6:cc) {struct cc_6}: cc :=
-  match cc_6 with
-  | cc_empty => cc_empty 
-  | (cc_lam x cc5) => cc_lam x (open_cc_wrt_exp_rec k e5 cc5)
-  | (cc_tabs X cc5) => cc_tabs X (open_cc_wrt_exp_rec k e5 cc5)
-  | (cc_tapp cc5 T) => cc_tapp (open_cc_wrt_exp_rec k e5 cc5) T
-  | (cc_appL cc5 e) => cc_appL (open_cc_wrt_exp_rec k e5 cc5) (open_exp_wrt_exp_rec k e5 e)
-  | (cc_appR e cc5) => cc_appR (open_exp_wrt_exp_rec k e5 e) (open_cc_wrt_exp_rec k e5 cc5)
-  | (cc_pairL cc5 e) => cc_pairL (open_cc_wrt_exp_rec k e5 cc5) (open_exp_wrt_exp_rec k e5 e)
-  | (cc_pairR e cc5) => cc_pairR (open_exp_wrt_exp_rec k e5 e) (open_cc_wrt_exp_rec k e5 cc5)
-  | (cc_co c cc5) => cc_co c (open_cc_wrt_exp_rec k e5 cc5)
-end.
-
-Definition open_qs_wrt_sty_rec (k:nat) (A5:sty) (qs5:qs) : qs :=
-  match qs5 with
-  | (qs_arr A) => qs_arr (open_sty_wrt_sty_rec k A5 A)
-  | (qs_all X A) => qs_all X (open_sty_wrt_sty_rec k A5 A)
-  | (qs_rcd l) => qs_rcd l
-end.
-
-Definition open_cc_wrt_ty T5 cc_6 := open_cc_wrt_ty_rec 0 cc_6 T5.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 
-Definition open_CC_wrt_sty A5 CC_6 := open_CC_wrt_sty_rec 0 CC_6 A5.
-
-Definition open_CC_wrt_sexp ee5 CC_6 := open_CC_wrt_sexp_rec 0 CC_6 ee5.
-
 Definition open_sexp_wrt_sty A5 ee_5 := open_sexp_wrt_sty_rec 0 ee_5 A5.
 
-Definition open_cc_wrt_exp e5 cc_6 := open_cc_wrt_exp_rec 0 cc_6 e5.
-
 Definition open_sty_wrt_sty A5 A_6 := open_sty_wrt_sty_rec 0 A_6 A5.
-
-Definition open_qs_wrt_sty A5 qs5 := open_qs_wrt_sty_rec 0 qs5 A5.
 
 Definition open_exp_wrt_ty T_5 e_5 := open_exp_wrt_ty_rec 0 e_5 T_5.
 
@@ -378,7 +294,7 @@ Inductive lc_sty : sty -> Prop :=    (* defn lc_sty *)
      (lc_sty A) ->
       ( forall X , lc_sty  ( open_sty_wrt_sty B (sty_var_f X) )  )  ->
      (lc_sty (sty_all A B))
- | lc_sty_rcd : forall (l:i) (A:sty),
+ | lc_sty_rcd : forall (l:nat) (A:sty),
      (lc_sty A) ->
      (lc_sty (sty_rcd l A)).
 
@@ -408,8 +324,8 @@ Inductive lc_sexp : sexp -> Prop :=    (* defn lc_sexp *)
      (lc_sexp (sexp_var_f x))
  | lc_sexp_top : 
      (lc_sexp sexp_top)
- | lc_sexp_lit : forall (i5:i),
-     (lc_sexp (sexp_lit i5))
+ | lc_sexp_lit : forall (i:nat),
+     (lc_sexp (sexp_lit i))
  | lc_sexp_abs : forall (ee:sexp),
       ( forall x , lc_sexp  ( open_sexp_wrt_sexp ee (sexp_var_f x) )  )  ->
      (lc_sexp (sexp_abs ee))
@@ -433,10 +349,10 @@ Inductive lc_sexp : sexp -> Prop :=    (* defn lc_sexp *)
      (lc_sexp ee) ->
      (lc_sty A) ->
      (lc_sexp (sexp_anno ee A))
- | lc_sexp_rcd : forall (l:i) (ee:sexp),
+ | lc_sexp_rcd : forall (l:nat) (ee:sexp),
      (lc_sexp ee) ->
      (lc_sexp (sexp_rcd l ee))
- | lc_sexp_proj : forall (ee:sexp) (l:i),
+ | lc_sexp_proj : forall (ee:sexp) (l:nat),
      (lc_sexp ee) ->
      (lc_sexp (sexp_proj ee l)).
 
@@ -446,8 +362,8 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_exp (exp_var_f x))
  | lc_exp_unit : 
      (lc_exp exp_unit)
- | lc_exp_lit : forall (i5:i),
-     (lc_exp (exp_lit i5))
+ | lc_exp_lit : forall (i:nat),
+     (lc_exp (exp_lit i))
  | lc_exp_abs : forall (e:exp),
       ( forall x , lc_exp  ( open_exp_wrt_exp e (exp_var_f x) )  )  ->
      (lc_exp (exp_abs e))
@@ -470,92 +386,7 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_ty T) ->
      (lc_exp (exp_tapp e T)).
 
-(* defns LC_CC *)
-Inductive lc_CC : CC -> Prop :=    (* defn lc_CC *)
- | lc_C_Empty : 
-     (lc_CC C_Empty)
- | lc_C_Lam : forall (x:expvar) (CC5:CC),
-     (lc_CC CC5) ->
-     (lc_CC (C_Lam x CC5))
- | lc_C_tabs : forall (X:typvar) (A:sty) (CC5:CC),
-     (lc_sty A) ->
-     (lc_CC CC5) ->
-     (lc_CC (C_tabs X A CC5))
- | lc_C_tapp : forall (CC5:CC) (A:sty),
-     (lc_CC CC5) ->
-     (lc_sty A) ->
-     (lc_CC (C_tapp CC5 A))
- | lc_C_AppL : forall (CC5:CC) (ee:sexp),
-     (lc_CC CC5) ->
-     (lc_sexp ee) ->
-     (lc_CC (C_AppL CC5 ee))
- | lc_C_AppRd : forall (ee:sexp) (CC5:CC),
-     (lc_sexp ee) ->
-     (lc_CC CC5) ->
-     (lc_CC (C_AppRd ee CC5))
- | lc_C_MergeL : forall (CC5:CC) (ee:sexp),
-     (lc_CC CC5) ->
-     (lc_sexp ee) ->
-     (lc_CC (C_MergeL CC5 ee))
- | lc_C_MergeR : forall (ee:sexp) (CC5:CC),
-     (lc_sexp ee) ->
-     (lc_CC CC5) ->
-     (lc_CC (C_MergeR ee CC5))
- | lc_C_Anno : forall (CC5:CC) (A:sty),
-     (lc_CC CC5) ->
-     (lc_sty A) ->
-     (lc_CC (C_Anno CC5 A))
- | lc_C_Rcd : forall (l:i) (CC5:CC),
-     (lc_CC CC5) ->
-     (lc_CC (C_Rcd l CC5))
- | lc_C_Proj : forall (CC5:CC) (l:i),
-     (lc_CC CC5) ->
-     (lc_CC (C_Proj CC5 l)).
 
-(* defns LC_cc *)
-Inductive lc_cc : cc -> Prop :=    (* defn lc_cc *)
- | lc_cc_empty : 
-     (lc_cc cc_empty)
- | lc_cc_lam : forall (x:expvar) (cc5:cc),
-     (lc_cc cc5) ->
-     (lc_cc (cc_lam x cc5))
- | lc_cc_tabs : forall (X:typvar) (cc5:cc),
-     (lc_cc cc5) ->
-     (lc_cc (cc_tabs X cc5))
- | lc_cc_tapp : forall (cc5:cc) (T:ty),
-     (lc_cc cc5) ->
-     (lc_ty T) ->
-     (lc_cc (cc_tapp cc5 T))
- | lc_cc_appL : forall (cc5:cc) (e:exp),
-     (lc_cc cc5) ->
-     (lc_exp e) ->
-     (lc_cc (cc_appL cc5 e))
- | lc_cc_appR : forall (e:exp) (cc5:cc),
-     (lc_exp e) ->
-     (lc_cc cc5) ->
-     (lc_cc (cc_appR e cc5))
- | lc_cc_pairL : forall (cc5:cc) (e:exp),
-     (lc_cc cc5) ->
-     (lc_exp e) ->
-     (lc_cc (cc_pairL cc5 e))
- | lc_cc_pairR : forall (e:exp) (cc5:cc),
-     (lc_exp e) ->
-     (lc_cc cc5) ->
-     (lc_cc (cc_pairR e cc5))
- | lc_cc_co : forall (c:co) (cc5:cc),
-     (lc_cc cc5) ->
-     (lc_cc (cc_co c cc5)).
-
-(* defns LC_qs *)
-Inductive lc_qs : qs -> Prop :=    (* defn lc_qs *)
- | lc_qs_arr : forall (A:sty),
-     (lc_sty A) ->
-     (lc_qs (qs_arr A))
- | lc_qs_all : forall (X:typvar) (A:sty),
-     (lc_sty A) ->
-     (lc_qs (qs_all X A))
- | lc_qs_rcd : forall (l:i),
-     (lc_qs (qs_rcd l)).
 (** free variables *)
 Fixpoint fv_ty_in_ty (T_5:ty) : vars :=
   match T_5 with
@@ -641,68 +472,6 @@ Fixpoint fv_exp_in_exp (e_5:exp) : vars :=
   | (exp_tapp e T) => (fv_exp_in_exp e)
 end.
 
-Fixpoint fv_ty_in_cc (cc_6:cc) : vars :=
-  match cc_6 with
-  | cc_empty => {}
-  | (cc_lam x cc5) => (fv_ty_in_cc cc5)
-  | (cc_tabs X cc5) => (fv_ty_in_cc cc5)
-  | (cc_tapp cc5 T) => (fv_ty_in_cc cc5) \u (fv_ty_in_ty T)
-  | (cc_appL cc5 e) => (fv_ty_in_cc cc5) \u (fv_ty_in_exp e)
-  | (cc_appR e cc5) => (fv_ty_in_exp e) \u (fv_ty_in_cc cc5)
-  | (cc_pairL cc5 e) => (fv_ty_in_cc cc5) \u (fv_ty_in_exp e)
-  | (cc_pairR e cc5) => (fv_ty_in_exp e) \u (fv_ty_in_cc cc5)
-  | (cc_co c cc5) => (fv_ty_in_cc cc5)
-end.
-
-Fixpoint fv_sty_in_CC (CC_6:CC) : vars :=
-  match CC_6 with
-  | C_Empty => {}
-  | (C_Lam x CC5) => (fv_sty_in_CC CC5)
-  | (C_tabs X A CC5) => (fv_sty_in_sty A) \u (fv_sty_in_CC CC5)
-  | (C_tapp CC5 A) => (fv_sty_in_CC CC5) \u (fv_sty_in_sty A)
-  | (C_AppL CC5 ee) => (fv_sty_in_CC CC5) \u (fv_sty_in_sexp ee)
-  | (C_AppRd ee CC5) => (fv_sty_in_sexp ee) \u (fv_sty_in_CC CC5)
-  | (C_MergeL CC5 ee) => (fv_sty_in_CC CC5) \u (fv_sty_in_sexp ee)
-  | (C_MergeR ee CC5) => (fv_sty_in_sexp ee) \u (fv_sty_in_CC CC5)
-  | (C_Anno CC5 A) => (fv_sty_in_CC CC5) \u (fv_sty_in_sty A)
-  | (C_Rcd l CC5) => (fv_sty_in_CC CC5)
-  | (C_Proj CC5 l) => (fv_sty_in_CC CC5)
-end.
-
-Fixpoint fv_sexp_in_CC (CC_6:CC) : vars :=
-  match CC_6 with
-  | C_Empty => {}
-  | (C_Lam x CC5) => (fv_sexp_in_CC CC5)
-  | (C_tabs X A CC5) => (fv_sexp_in_CC CC5)
-  | (C_tapp CC5 A) => (fv_sexp_in_CC CC5)
-  | (C_AppL CC5 ee) => (fv_sexp_in_CC CC5) \u (fv_sexp_in_sexp ee)
-  | (C_AppRd ee CC5) => (fv_sexp_in_sexp ee) \u (fv_sexp_in_CC CC5)
-  | (C_MergeL CC5 ee) => (fv_sexp_in_CC CC5) \u (fv_sexp_in_sexp ee)
-  | (C_MergeR ee CC5) => (fv_sexp_in_sexp ee) \u (fv_sexp_in_CC CC5)
-  | (C_Anno CC5 A) => (fv_sexp_in_CC CC5)
-  | (C_Rcd l CC5) => (fv_sexp_in_CC CC5)
-  | (C_Proj CC5 l) => (fv_sexp_in_CC CC5)
-end.
-
-Definition fv_sty_in_qs (qs5:qs) : vars :=
-  match qs5 with
-  | (qs_arr A) => (fv_sty_in_sty A)
-  | (qs_all X A) => (fv_sty_in_sty A)
-  | (qs_rcd l) => {}
-end.
-
-Fixpoint fv_exp_in_cc (cc_6:cc) : vars :=
-  match cc_6 with
-  | cc_empty => {}
-  | (cc_lam x cc5) => (fv_exp_in_cc cc5)
-  | (cc_tabs X cc5) => (fv_exp_in_cc cc5)
-  | (cc_tapp cc5 T) => (fv_exp_in_cc cc5)
-  | (cc_appL cc5 e) => (fv_exp_in_cc cc5) \u (fv_exp_in_exp e)
-  | (cc_appR e cc5) => (fv_exp_in_exp e) \u (fv_exp_in_cc cc5)
-  | (cc_pairL cc5 e) => (fv_exp_in_cc cc5) \u (fv_exp_in_exp e)
-  | (cc_pairR e cc5) => (fv_exp_in_exp e) \u (fv_exp_in_cc cc5)
-  | (cc_co c cc5) => (fv_exp_in_cc cc5)
-end.
 
 (** substitutions *)
 Fixpoint subst_ty_in_ty (T_5:ty) (X5:typvar) (T__6:ty) {struct T__6} : ty :=
@@ -789,70 +558,6 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_tapp e T) => exp_tapp (subst_exp_in_exp e_5 x5 e) T
 end.
 
-Fixpoint subst_ty_in_cc (T5:ty) (X5:typvar) (cc_6:cc) {struct cc_6} : cc :=
-  match cc_6 with
-  | cc_empty => cc_empty 
-  | (cc_lam x cc5) => cc_lam x (subst_ty_in_cc T5 X5 cc5)
-  | (cc_tabs X cc5) => cc_tabs X (subst_ty_in_cc T5 X5 cc5)
-  | (cc_tapp cc5 T) => cc_tapp (subst_ty_in_cc T5 X5 cc5) (subst_ty_in_ty T5 X5 T)
-  | (cc_appL cc5 e) => cc_appL (subst_ty_in_cc T5 X5 cc5) (subst_ty_in_exp T5 X5 e)
-  | (cc_appR e cc5) => cc_appR (subst_ty_in_exp T5 X5 e) (subst_ty_in_cc T5 X5 cc5)
-  | (cc_pairL cc5 e) => cc_pairL (subst_ty_in_cc T5 X5 cc5) (subst_ty_in_exp T5 X5 e)
-  | (cc_pairR e cc5) => cc_pairR (subst_ty_in_exp T5 X5 e) (subst_ty_in_cc T5 X5 cc5)
-  | (cc_co c cc5) => cc_co c (subst_ty_in_cc T5 X5 cc5)
-end.
-
-Fixpoint subst_sty_in_CC (A5:sty) (X5:typvar) (CC_6:CC) {struct CC_6} : CC :=
-  match CC_6 with
-  | C_Empty => C_Empty 
-  | (C_Lam x CC5) => C_Lam x (subst_sty_in_CC A5 X5 CC5)
-  | (C_tabs X A CC5) => C_tabs X (subst_sty_in_sty A5 X5 A) (subst_sty_in_CC A5 X5 CC5)
-  | (C_tapp CC5 A) => C_tapp (subst_sty_in_CC A5 X5 CC5) (subst_sty_in_sty A5 X5 A)
-  | (C_AppL CC5 ee) => C_AppL (subst_sty_in_CC A5 X5 CC5) (subst_sty_in_sexp A5 X5 ee)
-  | (C_AppRd ee CC5) => C_AppRd (subst_sty_in_sexp A5 X5 ee) (subst_sty_in_CC A5 X5 CC5)
-  | (C_MergeL CC5 ee) => C_MergeL (subst_sty_in_CC A5 X5 CC5) (subst_sty_in_sexp A5 X5 ee)
-  | (C_MergeR ee CC5) => C_MergeR (subst_sty_in_sexp A5 X5 ee) (subst_sty_in_CC A5 X5 CC5)
-  | (C_Anno CC5 A) => C_Anno (subst_sty_in_CC A5 X5 CC5) (subst_sty_in_sty A5 X5 A)
-  | (C_Rcd l CC5) => C_Rcd l (subst_sty_in_CC A5 X5 CC5)
-  | (C_Proj CC5 l) => C_Proj (subst_sty_in_CC A5 X5 CC5) l
-end.
-
-Fixpoint subst_sexp_in_CC (ee5:sexp) (x5:expvar) (CC_6:CC) {struct CC_6} : CC :=
-  match CC_6 with
-  | C_Empty => C_Empty 
-  | (C_Lam x CC5) => C_Lam x (subst_sexp_in_CC ee5 x5 CC5)
-  | (C_tabs X A CC5) => C_tabs X A (subst_sexp_in_CC ee5 x5 CC5)
-  | (C_tapp CC5 A) => C_tapp (subst_sexp_in_CC ee5 x5 CC5) A
-  | (C_AppL CC5 ee) => C_AppL (subst_sexp_in_CC ee5 x5 CC5) (subst_sexp_in_sexp ee5 x5 ee)
-  | (C_AppRd ee CC5) => C_AppRd (subst_sexp_in_sexp ee5 x5 ee) (subst_sexp_in_CC ee5 x5 CC5)
-  | (C_MergeL CC5 ee) => C_MergeL (subst_sexp_in_CC ee5 x5 CC5) (subst_sexp_in_sexp ee5 x5 ee)
-  | (C_MergeR ee CC5) => C_MergeR (subst_sexp_in_sexp ee5 x5 ee) (subst_sexp_in_CC ee5 x5 CC5)
-  | (C_Anno CC5 A) => C_Anno (subst_sexp_in_CC ee5 x5 CC5) A
-  | (C_Rcd l CC5) => C_Rcd l (subst_sexp_in_CC ee5 x5 CC5)
-  | (C_Proj CC5 l) => C_Proj (subst_sexp_in_CC ee5 x5 CC5) l
-end.
-
-Definition subst_sty_in_qs (A5:sty) (X5:typvar) (qs5:qs) : qs :=
-  match qs5 with
-  | (qs_arr A) => qs_arr (subst_sty_in_sty A5 X5 A)
-  | (qs_all X A) => qs_all X (subst_sty_in_sty A5 X5 A)
-  | (qs_rcd l) => qs_rcd l
-end.
-
-Fixpoint subst_exp_in_cc (e5:exp) (x5:expvar) (cc_6:cc) {struct cc_6} : cc :=
-  match cc_6 with
-  | cc_empty => cc_empty 
-  | (cc_lam x cc5) => cc_lam x (subst_exp_in_cc e5 x5 cc5)
-  | (cc_tabs X cc5) => cc_tabs X (subst_exp_in_cc e5 x5 cc5)
-  | (cc_tapp cc5 T) => cc_tapp (subst_exp_in_cc e5 x5 cc5) T
-  | (cc_appL cc5 e) => cc_appL (subst_exp_in_cc e5 x5 cc5) (subst_exp_in_exp e5 x5 e)
-  | (cc_appR e cc5) => cc_appR (subst_exp_in_exp e5 x5 e) (subst_exp_in_cc e5 x5 cc5)
-  | (cc_pairL cc5 e) => cc_pairL (subst_exp_in_cc e5 x5 cc5) (subst_exp_in_exp e5 x5 e)
-  | (cc_pairR e cc5) => cc_pairR (subst_exp_in_exp e5 x5 e) (subst_exp_in_cc e5 x5 cc5)
-  | (cc_co c cc5) => cc_co c (subst_exp_in_cc e5 x5 cc5)
-end.
-
-
 
 (** infrastructure *)
-Hint Constructors lc_sty lc_ty lc_sexp lc_exp lc_CC lc_cc lc_qs.
+Hint Constructors lc_sty lc_ty lc_sexp lc_exp.

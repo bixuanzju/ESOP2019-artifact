@@ -3,6 +3,13 @@ Require Import Infrastructure.
 Require Import List.
 Import ListNotations.
 
+(* ********************************************************************** *)
+(** * Algorithmic queue *)
+
+Inductive qs : Set :=
+ | qs_arr (A:sty)
+ | qs_all (X:typvar) (A:sty)
+ | qs_rcd (l:nat).
 
 
 Definition size_elem (s : qs) : nat :=
@@ -13,12 +20,10 @@ Definition size_elem (s : qs) : nat :=
 end.
 
 
-Definition sizefs (Q : seqs) :=
-  fold_right (fun l acc => l + acc) 0 (map size_elem Q).
-
-
 (* ********************************************************************** *)
 (** * Q => A *)
+
+Definition seqs : Set := list qs.
 
 Definition applyfs (Q : seqs) (A : sty) :=
   fold_right (fun el acc =>
@@ -83,6 +88,38 @@ Inductive wf_fs : seqs -> Prop :=
 Hint Constructors qvars_notin wf_fs.
 
 
+(* ********************************************************************** *)
+(** * Freshness  *)
+
+
+Definition fv_qs (B : qs) : vars :=
+  match B with
+  | qs_arr A => fv_sty_in_sty A
+  | qs_rcd l => {}
+  | qs_all X A => singleton X `union` fv_sty_in_sty A
+  end.
+
+
+Definition seqs_vars (fs : seqs) : vars :=
+  fold_right (fun qs acc => fv_qs qs \u acc) empty fs.
+
+
+Ltac gather_atoms ::=
+  let A := gather_atoms_with (fun x : vars => x) in
+  let B := gather_atoms_with (fun x : var => {{ x }}) in
+  let C1 := gather_atoms_with (fun x : ctx => dom x) in
+  let C2 := gather_atoms_with (fun x : tctx => dom x) in
+  let C3 := gather_atoms_with (fun x : stctx => dom x) in
+  let C4 := gather_atoms_with (fun x : sctx => dom x) in
+  let D1 := gather_atoms_with (fun x => fv_ty_in_ty x) in
+  let D2 := gather_atoms_with (fun x => fv_ty_in_exp x) in
+  let D3 := gather_atoms_with (fun x => fv_exp_in_exp x) in
+  let D4 := gather_atoms_with (fun x => fv_sty_in_sty x) in
+  let D5 := gather_atoms_with (fun x => fv_sty_in_sexp x) in
+  let D6 := gather_atoms_with (fun x => fv_sexp_in_sexp x) in
+  let D7 := gather_atoms_with (fun x => seqs_vars x) in
+  constr:(A \u B \u C1 \u C2 \u C3 \u C4 \u D1 \u D2 \u D3 \u D4 \u D5 \u D6 \u D7).
+
 
 
 (* ********************************************************************** *)
@@ -131,16 +168,16 @@ Inductive asub : sty -> seqs -> sty -> co -> Prop :=
      asub A Q B1 c1 ->
      asub A Q B2 c2 ->
      asub A Q (sty_and B1 B2) (co_trans  (calAnd  Q )  (co_pair c1 c2))
- | A_rcdNat : forall (l:i) (A:sty) (Q:seqs) (c:co),
+ | A_rcdNat : forall (l:nat) (A:sty) (Q:seqs) (c:co),
      asub A Q sty_nat c ->
      asub (sty_rcd l A)   (cons  (qs_rcd l)   Q )   sty_nat c
- | A_rcdBot : forall (l:i) (A:sty) (Q:seqs) (c:co),
+ | A_rcdBot : forall (l:nat) (A:sty) (Q:seqs) (c:co),
      asub A Q sty_bot c ->
      asub (sty_rcd l A)   (cons  (qs_rcd l)   Q )   sty_bot c
- | A_rcdVar : forall (l:i) (A:sty) (Q:seqs) (X:typvar) (c:co),
+ | A_rcdVar : forall (l:nat) (A:sty) (Q:seqs) (X:typvar) (c:co),
      asub A Q (sty_var_f X) c ->
      asub (sty_rcd l A)   (cons  (qs_rcd l)   Q )   (sty_var_f X) c
- | A_rcd : forall (A:sty) (Q:seqs) (l:i) (B:sty) (c:co),
+ | A_rcd : forall (A:sty) (Q:seqs) (l:nat) (B:sty) (c:co),
      asub A ( Q  ++ [(qs_rcd l)])   B c ->
      asub A Q (sty_rcd l B) c
  | A_arr : forall (A:sty) (Q:seqs) (B1 B2:sty) (c:co),
