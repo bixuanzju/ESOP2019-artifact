@@ -5,7 +5,7 @@ description: Please see README.md
 category: Language
 author: Anonymous
 maintainer: anonymous@gmail.com
-copyright: 2016-2017, Anonymous
+copyright: 2018, Xuan Bi
 license: BSD3
 dependencies:
   - base >=4.7 && <5

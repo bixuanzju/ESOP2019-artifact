@@ -1,4 +1,4 @@
-# SEDEL - A Type System for First-Class Traits
+# SEDEL
 
 ## Build and Run
 
