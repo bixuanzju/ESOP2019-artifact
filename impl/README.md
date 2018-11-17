@@ -1,4 +1,4 @@
-# SEDEL
+# SEDEL---A Source Language Built on Fi+
 
 ## Build and Run
 
